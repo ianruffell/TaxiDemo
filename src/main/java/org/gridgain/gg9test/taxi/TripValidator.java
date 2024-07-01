@@ -1,6 +1,8 @@
-package org.gridgain.demo.model;
+package org.gridgain.gg9test.taxi;
 
 import java.time.Instant;
+
+import org.gridgain.gg9test.taxi.model.Trip;
 
 public class TripValidator {
 	private static final Instant START_MONTH = Instant.parse("2023-07-01T00:00:00.00Z");
@@ -24,19 +26,19 @@ public class TripValidator {
 			System.err.println("Invalid dropoff location");
 			return false;
 		}
-		if (trip.getPickup_datetime().toInstant().isBefore(START_MONTH)) {
+		if (Instant.ofEpochMilli(trip.getPickup_datetime()).isBefore(START_MONTH)) {
 			System.err.println("Pickup before start of month");
 			return false;
 		}
-		if (trip.getPickup_datetime().toInstant().isAfter(END_MONTH)) {
+		if (Instant.ofEpochMilli(trip.getPickup_datetime()).isAfter(END_MONTH)) {
 			System.err.println("Pickup after end of month");
 			return false;
 		}
-		if (trip.getDropoff_datetime().toInstant().isBefore(START_MONTH)) {
+		if (Instant.ofEpochMilli(trip.getDropoff_datetime()).isBefore(START_MONTH)) {
 			System.err.println("Dropoff before start of month");
 			return false;
 		}
-		if (trip.getDropoff_datetime().toInstant().isAfter(END_MONTH)) {
+		if (Instant.ofEpochMilli(trip.getDropoff_datetime()).isAfter(END_MONTH)) {
 			System.err.println("Dropoff after end of month");
 			return false;
 		}

@@ -1,119 +1,78 @@
-package org.gridgain.demo.model;
+package org.gridgain.gg9test.taxi.model;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.apache.avro.generic.GenericRecord;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.catalog.annotations.Column;
+import org.apache.ignite.catalog.annotations.ColumnRef;
+import org.apache.ignite.catalog.annotations.Id;
+import org.apache.ignite.catalog.annotations.Index;
+import org.apache.ignite.catalog.annotations.Table;
 
+@Table(value = Trip.TABLE_NAME, zone = TaxiZone.class, indexes = {
+		@Index(value = "trip_id", columns = { @ColumnRef(value = "trip_id") })
+		})
 public class Trip {
+	
+	public final static String TABLE_NAME = "TRIP";
 
-	@QuerySqlField(index = true)
+	@Id
+	@Column
 	private String trip_id;
-	@QuerySqlField(index = true)
+	@Column
 	private String registration;
-	@QuerySqlField
+	@Column
 	private String hvfhs_license_num;
-	@QuerySqlField
+	@Column
 	private String dispatching_base_num;
-	@QuerySqlField
+	@Column
 	private String originating_base_num;
-	@QuerySqlField
-	private Timestamp request_datetime;
-	@QuerySqlField
-	private Timestamp on_scene_datetime;
-	@QuerySqlField
-	private Timestamp pickup_datetime;
-	@QuerySqlField
-	private Timestamp dropoff_datetime;
-	@QuerySqlField
+	@Column
+	private Long request_datetime;
+	@Column
+	private Long pickup_datetime;
+	@Column
+	private Long dropoff_datetime;
+	@Column
 	private Integer PULocationID;
-	@QuerySqlField
+	@Column
 	private Integer DOLocationID;
-	@QuerySqlField
+	@Column
 	private Double trip_miles;
-	@QuerySqlField
+	@Column
 	private Long trip_time;
-	@QuerySqlField
+	@Column
 	private Double base_passenger_fare;
-	@QuerySqlField
+	@Column
 	private Double tolls;
-	@QuerySqlField
+	@Column
 	private Double bcf;
-	@QuerySqlField
+	@Column
 	private Double sales_tax;
-	@QuerySqlField
+	@Column
 	private Double congestion_surcharge;
-	@QuerySqlField
+	@Column
 	private Double airport_fee;
-	@QuerySqlField
+	@Column
 	private Double tips;
-	@QuerySqlField
+	@Column
 	private Double driver_pay;
-	@QuerySqlField
+	@Column
 	private String shared_request_flag;
-	@QuerySqlField
+	@Column
 	private String shared_match_flag;
-	@QuerySqlField
+	@Column
 	private String access_a_ride_flag;
-	@QuerySqlField
+	@Column
 	private String wav_request_flag;
-	@QuerySqlField
+	@Column
 	private String wav_match_flag;
-
-	public static Trip fromRecord(GenericRecord record) {
-		Trip t = new Trip();
-		t.trip_id = UUID.randomUUID().toString();
-		t.hvfhs_license_num = (String) record.get("hvfhs_license_num");
-		t.dispatching_base_num = (String) record.get("dispatching_base_num");
-		t.originating_base_num = (String) record.get("originating_base_num");
-		t.request_datetime = Timestamp.from(Instant.ofEpochMilli((Long) record.get("request_datetime") / 1000));
-		if (record.get("on_scene_datetime") != null) {
-			t.on_scene_datetime = Timestamp.from(Instant.ofEpochMilli((Long) record.get("on_scene_datetime") / 1000));
-		}
-		t.pickup_datetime = Timestamp.from(Instant.ofEpochMilli((Long) record.get("pickup_datetime") / 1000));
-		t.dropoff_datetime = Timestamp.from(Instant.ofEpochMilli((Long) record.get("dropoff_datetime") / 1000));
-		t.PULocationID = (Integer) record.get("PULocationID");
-		t.DOLocationID = (Integer) record.get("DOLocationID");
-		t.trip_miles = (Double) record.get("trip_miles");
-		t.trip_time = (Long) record.get("trip_time");
-		t.base_passenger_fare = (Double) record.get("base_passenger_fare");
-		t.tolls = (Double) record.get("tolls");
-		t.bcf = (Double) record.get("bcf");
-		t.sales_tax = (Double) record.get("sales_tax");
-		t.congestion_surcharge = (Double) record.get("congestion_surcharge");
-		t.airport_fee = (Double) record.get("airport_fee");
-		t.tips = (Double) record.get("tips");
-		t.driver_pay = (Double) record.get("driver_pay");
-		t.shared_request_flag = (String) record.get("shared_request_flag");
-		t.shared_match_flag = (String) record.get("shared_match_flag");
-		t.access_a_ride_flag = (String) record.get("access_a_ride_flag");
-		t.wav_request_flag = (String) record.get("wav_request_flag");
-		t.wav_match_flag = (String) record.get("wav_match_flag");
-		return t;
-	}
-
-	public TripRequest toTripRequest() {
-		return new TripRequest(trip_id, request_datetime, pickup_datetime, dropoff_datetime, PULocationID,
-				DOLocationID);
-	}
-
-	public TripOnScene toTripOnScene() {
-		return new TripOnScene(trip_id, on_scene_datetime, PULocationID);
-	}
-
-	public TripPickUp toTripPickUp() {
-		return new TripPickUp(trip_id, pickup_datetime, PULocationID);
-	}
-
 
 	private Trip() {
 	}
 
-	public Trip(String trip_id, String registration, String hvfhs_license_num, String dispatching_base_num, String originating_base_num,
-			Timestamp request_datetime, Timestamp on_scene_datetime, Timestamp pickup_datetime,
-			Timestamp dropoff_datetime,
+	public Trip(String trip_id, String registration, String hvfhs_license_num, String dispatching_base_num,
+			String originating_base_num, Long request_datetime, Long pickup_datetime, Long dropoff_datetime,
 			Integer pULocationID, Integer dOLocationID, Double trip_miles, Long trip_time, Double base_passenger_fare,
 			Double tolls, Double bcf, Double sales_tax, Double congestion_surcharge, Double airport_fee, Double tips,
 			Double driver_pay, String shared_request_flag, String shared_match_flag, String access_a_ride_flag,
@@ -124,7 +83,6 @@ public class Trip {
 		this.dispatching_base_num = dispatching_base_num;
 		this.originating_base_num = originating_base_num;
 		this.request_datetime = request_datetime;
-		this.on_scene_datetime = on_scene_datetime;
 		this.pickup_datetime = pickup_datetime;
 		this.dropoff_datetime = dropoff_datetime;
 		this.PULocationID = pULocationID;
@@ -170,35 +128,27 @@ public class Trip {
 		this.originating_base_num = originating_base_num;
 	}
 
-	public Timestamp getRequest_datetime() {
+	public Long getRequest_datetime() {
 		return request_datetime;
 	}
 
-	public void setRequest_datetime(Timestamp request_datetime) {
+	public void setRequest_datetime(Long request_datetime) {
 		this.request_datetime = request_datetime;
 	}
 
-	public Timestamp getOn_scene_datetime() {
-		return on_scene_datetime;
-	}
-
-	public void setOn_scene_datetime(Timestamp on_scene_datetime) {
-		this.on_scene_datetime = on_scene_datetime;
-	}
-
-	public Timestamp getPickup_datetime() {
+	public Long getPickup_datetime() {
 		return pickup_datetime;
 	}
 
-	public void setPickup_datetime(Timestamp pickup_datetime) {
+	public void setPickup_datetime(Long pickup_datetime) {
 		this.pickup_datetime = pickup_datetime;
 	}
 
-	public Timestamp getDropoff_datetime() {
+	public Long getDropoff_datetime() {
 		return dropoff_datetime;
 	}
 
-	public void setDropoff_datetime(Timestamp dropoff_datetime) {
+	public void setDropoff_datetime(Long dropoff_datetime) {
 		this.dropoff_datetime = dropoff_datetime;
 	}
 
@@ -358,15 +308,52 @@ public class Trip {
 	public String toString() {
 		return "Trip [trip_id=" + trip_id + ", registration=" + registration + ", hvfhs_license_num="
 				+ hvfhs_license_num + ", dispatching_base_num=" + dispatching_base_num + ", originating_base_num="
-				+ originating_base_num + ", request_datetime=" + request_datetime + ", on_scene_datetime="
-				+ on_scene_datetime + ", pickup_datetime=" + pickup_datetime + ", dropoff_datetime=" + dropoff_datetime
-				+ ", PULocationID=" + PULocationID + ", DOLocationID=" + DOLocationID + ", trip_miles=" + trip_miles
-				+ ", trip_time=" + trip_time + ", base_passenger_fare=" + base_passenger_fare + ", tolls=" + tolls
-				+ ", bcf=" + bcf + ", sales_tax=" + sales_tax + ", congestion_surcharge=" + congestion_surcharge
-				+ ", airport_fee=" + airport_fee + ", tips=" + tips + ", driver_pay=" + driver_pay
-				+ ", shared_request_flag=" + shared_request_flag + ", shared_match_flag=" + shared_match_flag
-				+ ", access_a_ride_flag=" + access_a_ride_flag + ", wav_request_flag=" + wav_request_flag
-				+ ", wav_match_flag=" + wav_match_flag + "]";
+				+ originating_base_num + ", request_datetime=" + request_datetime + ", pickup_datetime="
+				+ pickup_datetime + ", dropoff_datetime=" + dropoff_datetime + ", PULocationID=" + PULocationID
+				+ ", DOLocationID=" + DOLocationID + ", trip_miles=" + trip_miles + ", trip_time=" + trip_time
+				+ ", base_passenger_fare=" + base_passenger_fare + ", tolls=" + tolls + ", bcf=" + bcf + ", sales_tax="
+				+ sales_tax + ", congestion_surcharge=" + congestion_surcharge + ", airport_fee=" + airport_fee
+				+ ", tips=" + tips + ", driver_pay=" + driver_pay + ", shared_request_flag=" + shared_request_flag
+				+ ", shared_match_flag=" + shared_match_flag + ", access_a_ride_flag=" + access_a_ride_flag
+				+ ", wav_request_flag=" + wav_request_flag + ", wav_match_flag=" + wav_match_flag + "]";
+	}
+
+	public static Trip fromRecord(GenericRecord record) {
+		Trip t = new Trip();
+		t.trip_id = UUID.randomUUID().toString();
+		t.hvfhs_license_num = (String) record.get("hvfhs_license_num");
+		t.dispatching_base_num = (String) record.get("dispatching_base_num");
+		t.originating_base_num = (String) record.get("originating_base_num");
+		t.request_datetime = (Long) record.get("request_datetime") / 1000;
+		t.pickup_datetime = (Long) record.get("pickup_datetime") / 1000;
+		t.dropoff_datetime = (Long) record.get("dropoff_datetime") / 1000;
+		t.PULocationID = (Integer) record.get("PULocationID");
+		t.DOLocationID = (Integer) record.get("DOLocationID");
+		t.trip_miles = (Double) record.get("trip_miles");
+		t.trip_time = (Long) record.get("trip_time");
+		t.base_passenger_fare = (Double) record.get("base_passenger_fare");
+		t.tolls = (Double) record.get("tolls");
+		t.bcf = (Double) record.get("bcf");
+		t.sales_tax = (Double) record.get("sales_tax");
+		t.congestion_surcharge = (Double) record.get("congestion_surcharge");
+		t.airport_fee = (Double) record.get("airport_fee");
+		t.tips = (Double) record.get("tips");
+		t.driver_pay = (Double) record.get("driver_pay");
+		t.shared_request_flag = (String) record.get("shared_request_flag");
+		t.shared_match_flag = (String) record.get("shared_match_flag");
+		t.access_a_ride_flag = (String) record.get("access_a_ride_flag");
+		t.wav_request_flag = (String) record.get("wav_request_flag");
+		t.wav_match_flag = (String) record.get("wav_match_flag");
+		return t;
+	}
+
+	public TripRequest toTripRequest() {
+		return new TripRequest(trip_id, request_datetime, pickup_datetime, dropoff_datetime, PULocationID,
+				DOLocationID);
+	}
+
+	public TripPickUp toTripPickUp() {
+		return new TripPickUp(trip_id, pickup_datetime, PULocationID);
 	}
 
 }
