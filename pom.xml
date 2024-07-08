@@ -8,13 +8,12 @@
 	<artifactId>gg9-demo</artifactId>
 	<version>1.0-SNAPSHOT</version>
 
-	<repositories>
-		<repository>
-			<id>gridgain_ea</id>
-			<name>GridGain Snapshots</name>
-			<url>
-				https://www.gridgainsystems.com/nexus/content/repositories/external-ea</url>
-		</repository>
+        <repositories>
+                <repository>
+                        <id>GridGain External Repository</id>
+                        <url>
+                                https://www.gridgainsystems.com/nexus/content/repositories/external</url>
+                </repository>
 	</repositories>
 
 	<properties>
@@ -22,7 +21,7 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<gridgain.version>9.0.0-beta1</gridgain.version>
+		<gridgain.version>9.0.0</gridgain.version>
 	</properties>
 
 	<dependencies>
@@ -70,6 +69,11 @@
 		<dependency>
 			<groupId>org.gridgain</groupId>
 			<artifactId>ignite-sql-engine</artifactId>
+			<version>${gridgain.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gridgain</groupId>
+			<artifactId>ignite-jdbc</artifactId>
 			<version>${gridgain.version}</version>
 		</dependency>
 		<dependency>

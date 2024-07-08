@@ -72,38 +72,49 @@ public class App implements Runnable {
 		System.out.printf("Client connected in %dms\n", System.currentTimeMillis() - start);
 		
 		// Drop Tables
+		System.out.printf("Dropping tables - %s", Car.TABLE_NAME);
 		Statement query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + Car.TABLE_NAME);
 		ignite.sql().execute(null, query);
 		query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + Trip.TABLE_NAME);
+		System.out.printf(", %s", Trip.TABLE_NAME);
 		ignite.sql().execute(null, query);
 		query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + TripRequest.TABLE_NAME);
+		System.out.printf(", %s", TripRequest.TABLE_NAME);
 		ignite.sql().execute(null, query);
 		query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + TripPickUp.TABLE_NAME);
+		System.out.printf(", %s", TripPickUp.TABLE_NAME);
 		ignite.sql().execute(null, query);
 		query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + TripQueue.TABLE_NAME);
+		System.out.printf(", %s\n", TripQueue.TABLE_NAME);
 		ignite.sql().execute(null, query);
 		
-		ignite.catalog().create(Car.class).execute();
+		
+		System.out.printf("Creating tables - %s", Car.TABLE_NAME);
+		ignite.catalog().createTable(Car.class);
 		carTable = ignite.tables().table(Car.TABLE_NAME);
 		carKVView = carTable.keyValueView(Mapper.of(String.class), Mapper.of(Car.class));
 		carRView = carTable.recordView(Mapper.of(Car.class));
 
-		ignite.catalog().create(Trip.class).execute();
+		System.out.printf(", %s", Trip.TABLE_NAME);
+		ignite.catalog().createTable(Trip.class);
 		tripTable = ignite.tables().table(Trip.TABLE_NAME);
 		tripKVView = tripTable.keyValueView(Mapper.of(String.class), Mapper.of(Trip.class));
 		tripRView = tripTable.recordView(Mapper.of(Trip.class));
 
-		ignite.catalog().create(TripPickUp.class).execute();
+		System.out.printf(", %s", TripPickUp.TABLE_NAME);
+		ignite.catalog().createTable(TripPickUp.class);
 		tripPickUpTable = ignite.tables().table(TripPickUp.TABLE_NAME);
 		tripPickUpKVView = tripPickUpTable.keyValueView(Mapper.of(String.class), Mapper.of(TripPickUp.class));
 		tripPickUpRView = tripPickUpTable.recordView(Mapper.of(TripPickUp.class));
 
-		ignite.catalog().create(TripQueue.class).execute();
+		System.out.printf(", %s", TripQueue.TABLE_NAME);
+		ignite.catalog().createTable(TripQueue.class);
 		tripQueueTable = ignite.tables().table(TripQueue.TABLE_NAME);
 		tripQueueKVView = tripQueueTable.keyValueView(Mapper.of(String.class), Mapper.of(TripQueue.class));
 		tripQueueRView = tripQueueTable.recordView(Mapper.of(TripQueue.class));
 
-		ignite.catalog().create(TripRequest.class).execute();
+		System.out.printf(", %s", TripRequest.TABLE_NAME);
+		ignite.catalog().createTable(TripRequest.class);
 		tripRequestTable = ignite.tables().table(TripRequest.TABLE_NAME);
 		tripRequestKVView = tripRequestTable.keyValueView(Mapper.of(String.class), Mapper.of(TripRequest.class));
 		tripRequestRView = tripRequestTable.recordView(Mapper.of(TripRequest.class));

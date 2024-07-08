@@ -5,8 +5,11 @@ import org.apache.ignite.catalog.annotations.ColumnRef;
 import org.apache.ignite.catalog.annotations.Id;
 import org.apache.ignite.catalog.annotations.Index;
 import org.apache.ignite.catalog.annotations.Table;
+import org.apache.ignite.catalog.annotations.Zone;
 
-@Table(value = TripQueue.TABLE_NAME, zone = TaxiZone.class, indexes = {
+@Table(value = TripQueue.TABLE_NAME,
+zone = @Zone(value = "zone_test", storageProfiles = "default"),
+indexes = {
 		@Index(value = "tripId", columns = { @ColumnRef(value = "tripId") }),
 		@Index(value = "PickUpLocationId", columns = { @ColumnRef(value = "PickUpLocationId") }),
 		@Index(value = "pickUpTime", columns = { @ColumnRef(value = "pickUpTime") })

@@ -1,19 +1,19 @@
 package org.gridgain.gg9test.taxi.model;
 
 import org.apache.ignite.catalog.annotations.Column;
-import org.apache.ignite.catalog.annotations.ColumnRef;
 import org.apache.ignite.catalog.annotations.Id;
-import org.apache.ignite.catalog.annotations.Index;
 import org.apache.ignite.catalog.annotations.Table;
+import org.apache.ignite.catalog.annotations.Zone;
 
-@Table(value = TripRequest.TABLE_NAME, zone = TaxiZone.class, indexes = {
-		@Index(value = "tripId", columns = { @ColumnRef(value = "tripId") })
-		})
+@Table(value = TripRequest.TABLE_NAME,
+zone = @Zone(value = "zone_test", storageProfiles = "default")
+)
 public class TripRequest {
 	
 	public final static String TABLE_NAME = "TRIP_REQUEST";
 
 	@Id
+	@Column
 	private String tripId;
 	@Column
 	private Long requestDatetime;

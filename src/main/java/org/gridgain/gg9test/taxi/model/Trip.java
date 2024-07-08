@@ -8,8 +8,11 @@ import org.apache.ignite.catalog.annotations.ColumnRef;
 import org.apache.ignite.catalog.annotations.Id;
 import org.apache.ignite.catalog.annotations.Index;
 import org.apache.ignite.catalog.annotations.Table;
+import org.apache.ignite.catalog.annotations.Zone;
 
-@Table(value = Trip.TABLE_NAME, zone = TaxiZone.class, indexes = {
+@Table(value = Trip.TABLE_NAME,
+zone = @Zone(value = "zone_test", storageProfiles = "default"),
+indexes = {
 		@Index(value = "trip_id", columns = { @ColumnRef(value = "trip_id") })
 		})
 public class Trip {

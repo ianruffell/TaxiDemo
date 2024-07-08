@@ -1,4 +1,4 @@
-package org.gridgain.gg9test;
+package org.gridgain.gg9test.taxi;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,7 +13,7 @@ public class JDBCTest {
 
 	public JDBCTest() throws Exception {
 		String sql = "SELECT * FROM Person;";
-
+		//DriverManager.registerDriver(new org.apache.ignite.jdbc.IgniteJdbcDriver());
 		try (
 				Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10800");
 				Statement stmt = conn.createStatement();) {
