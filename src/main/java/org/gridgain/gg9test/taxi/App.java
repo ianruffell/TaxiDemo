@@ -19,7 +19,6 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.sql.ResultSet;
 import org.apache.ignite.sql.SqlRow;
 import org.apache.ignite.sql.Statement;
-import org.apache.ignite.table.KeyValueView;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.TableRowEvent;
@@ -50,11 +49,6 @@ public class App implements Runnable {
 	private Table tripPickUpTable;
 	private Table tripQueueTable;
 	private Table tripRequestTable;
-	private KeyValueView<String, Car> carKVView;
-	private KeyValueView<String, Trip> tripKVView;
-	private KeyValueView<String, TripPickUp> tripPickUpKVView;
-	private KeyValueView<String, TripQueue> tripQueueKVView;
-	private KeyValueView<String, TripRequest> tripRequestKVView;
 	private RecordView<Car> carRView;
 	private RecordView<Trip> tripRView;
 	private RecordView<TripPickUp> tripPickUpRView;
@@ -92,31 +86,26 @@ public class App implements Runnable {
 		System.out.printf("Creating tables - %s", Car.TABLE_NAME);
 		ignite.catalog().createTable(Car.class);
 		carTable = ignite.tables().table(Car.TABLE_NAME);
-		carKVView = carTable.keyValueView(Mapper.of(String.class), Mapper.of(Car.class));
 		carRView = carTable.recordView(Mapper.of(Car.class));
 
 		System.out.printf(", %s", Trip.TABLE_NAME);
 		ignite.catalog().createTable(Trip.class);
 		tripTable = ignite.tables().table(Trip.TABLE_NAME);
-		tripKVView = tripTable.keyValueView(Mapper.of(String.class), Mapper.of(Trip.class));
 		tripRView = tripTable.recordView(Mapper.of(Trip.class));
 
 		System.out.printf(", %s", TripPickUp.TABLE_NAME);
 		ignite.catalog().createTable(TripPickUp.class);
 		tripPickUpTable = ignite.tables().table(TripPickUp.TABLE_NAME);
-		tripPickUpKVView = tripPickUpTable.keyValueView(Mapper.of(String.class), Mapper.of(TripPickUp.class));
 		tripPickUpRView = tripPickUpTable.recordView(Mapper.of(TripPickUp.class));
 
 		System.out.printf(", %s", TripQueue.TABLE_NAME);
 		ignite.catalog().createTable(TripQueue.class);
 		tripQueueTable = ignite.tables().table(TripQueue.TABLE_NAME);
-		tripQueueKVView = tripQueueTable.keyValueView(Mapper.of(String.class), Mapper.of(TripQueue.class));
 		tripQueueRView = tripQueueTable.recordView(Mapper.of(TripQueue.class));
 
 		System.out.printf(", %s", TripRequest.TABLE_NAME);
 		ignite.catalog().createTable(TripRequest.class);
 		tripRequestTable = ignite.tables().table(TripRequest.TABLE_NAME);
-		tripRequestKVView = tripRequestTable.keyValueView(Mapper.of(String.class), Mapper.of(TripRequest.class));
 		tripRequestRView = tripRequestTable.recordView(Mapper.of(TripRequest.class));
 
 		System.out.print("Setup Continuous Queries ...");
@@ -182,7 +171,7 @@ public class App implements Runnable {
 			for (Trip trip : list) {
 				TripRequest tr = trip.toTripRequest();
 				// System.out.println("Request : " + tr);
-				tripRequestKVView.put(null, tr.getTripId(), tr);
+				tripRequestRView.insert(null, tr);
 			}
 			request.remove(currentTime);
 
@@ -190,14 +179,14 @@ public class App implements Runnable {
 			for (Trip trip : list) {
 				TripPickUp tup = trip.toTripPickUp();
 				// System.out.println("Pickup : " + tup);
-				tripPickUpKVView.put(null, tup.getTripId(), tup);
+				tripPickUpRView.insert(null, tup);
 			}
 			pickup.remove(currentTime);
 
 			list = dropOff.get(currentTime);
 			for (Trip trip : list) {
 				// System.out.println("Drop Off: " + trip);
-				tripKVView.put(null, trip.getTrip_id(), trip);
+				getTripRView().insert(null, trip);
 			}
 			dropOff.remove(currentTime);
 
@@ -253,46 +242,6 @@ public class App implements Runnable {
 
 	public void setTripRequestTable(Table tripRequestTable) {
 		this.tripRequestTable = tripRequestTable;
-	}
-
-	public KeyValueView<String, TripRequest> getTripRequestKVView() {
-		return tripRequestKVView;
-	}
-
-	public void setTripRequestKVView(KeyValueView<String, TripRequest> tripRequestKVView) {
-		this.tripRequestKVView = tripRequestKVView;
-	}
-
-	public KeyValueView<String, Car> getCarKVView() {
-		return carKVView;
-	}
-
-	public void setCarKVView(KeyValueView<String, Car> carKVView) {
-		this.carKVView = carKVView;
-	}
-
-	public KeyValueView<String, Trip> getTripKVView() {
-		return tripKVView;
-	}
-
-	public void setTripKVView(KeyValueView<String, Trip> tripKVView) {
-		this.tripKVView = tripKVView;
-	}
-
-	public KeyValueView<String, TripQueue> getTripQueueKVView() {
-		return tripQueueKVView;
-	}
-
-	public void setTripQueueKVView(KeyValueView<String, TripQueue> tripQueueKVView) {
-		this.tripQueueKVView = tripQueueKVView;
-	}
-
-	public KeyValueView<String, TripPickUp> getTripPickUpKVView() {
-		return tripPickUpKVView;
-	}
-
-	public void setTripPickUpKVView(KeyValueView<String, TripPickUp> tripPickUpKVView) {
-		this.tripPickUpKVView = tripPickUpKVView;
 	}
 
 	public RecordView<Car> getCarRView() {
@@ -369,14 +318,14 @@ public class App implements Runnable {
 						car.setQueuedTripId(tr.getTripId());
 						TripQueue tripQueue = new TripQueue(car.getRegistration(), tr.getPickupLocationId(),
 								tr.getDropoffLocationId(), tr.getPickupDatetime(), tr.getTripId());
-						tripQueueKVView.put(null, tripQueue.getTripId(), tripQueue);
-						tripRequestKVView.remove(null, tr.getTripId());
+						tripQueueRView.insert(null, tripQueue);
+						tripRequestRView.delete(null, tr);
 						// System.out.println("Add to Queue " + tripQueue.getTripId());
 					} else {
 						System.err.println("No car for queue!");
 					}
 				}
-				carKVView.put(null, car.getRegistration(), car);
+				carRView.insert(null, car);
 			}
 		}
 
@@ -404,31 +353,38 @@ public class App implements Runnable {
 			List<TableRowEvent<TripPickUp>> items = batch.rows();
 			for (TableRowEvent<TripPickUp> item : items) {
 				System.out.println("onNext: " + item.type() + ", old=" + item.oldEntry() + ", new=" + item.entry());
+				
 				TripPickUp tpu = item.entry();
-				TripRequest tripRequest = tripRequestKVView.get(null, tpu.getTripId());
-				TripQueue tripQueue = tripQueueKVView.get(null, tpu.getTripId());
+				String tripId = tpu.getTripId();
+				TripRequest tr = new TripRequest();
+				tr.setTripId(tripId);
+				TripRequest tripRequest = tripRequestRView.get(null, tr);
+				
+				TripQueue tq = new TripQueue();
+				tq.setTripId(tripId);
+				TripQueue tripQueue = tripQueueRView.get(null, tq);
 
 				Statement query = ignite.sql().createStatement("update car set locationId = ?, lastUpdate = ?, queuedTripId = null, tripId = ? where tripId = ? or queuedTripId = ?");
-				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query, tpu.getPULocationID(), tpu.getPickupTime(), tpu.getTripId(), tpu.getTripId(), tpu.getTripId());
+				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query, tpu.getPULocationID(), tpu.getPickupTime(), tripId, tripId, tripId);
 				long updated = resultSet.affectedRows();
 
 				query = ignite.sql().createStatement("SELECT REGISTRATION FROM CAR WHERE tripId = ?");
-				resultSet = ignite.sql().execute(null, query, tpu.getTripId());
+				resultSet = ignite.sql().execute(null, query, tripId);
 
 				String reg = "";
 				if (resultSet.hasNext()) {
 					reg = resultSet.next().stringValue(0);
-					System.out.printf("Pickup [%s] [%s] %s %s %d\n", reg, tpu.getTripId(),
-					new Boolean(tripRequest != null).toString(),
-					new Boolean(tripQueue != null).toString(), updated);
+					System.out.printf("Pickup [%s] [%s] %s %s %d\n", reg, tripId,
+					Boolean.valueOf(tripRequest != null).toString(),
+					Boolean.valueOf(tripQueue != null).toString(), updated);
 				} else {
-					System.err.printf("Pickup [%s] [%s] %s %s %d\n", reg, tpu.getTripId(),
-							new Boolean(tripRequest != null).toString(), new Boolean(tripQueue != null).toString(),
+					System.err.printf("Pickup [%s] [%s] %s %s %d\n", reg, tripId,
+							Boolean.valueOf(tripRequest != null).toString(), Boolean.valueOf(tripQueue != null).toString(),
 							updated);
 				}
 
-				tripRequestKVView.remove(null, tpu.getTripId());
-				tripQueueKVView.remove(null, tpu.getTripId());
+				tripRequestRView.delete(null, TripRequest.forId(tripId));
+				tripQueueRView.delete(null, TripQueue.forId(tripId));
 			}
 
 		}
@@ -447,8 +403,6 @@ public class App implements Runnable {
 
 	private class TripCompleteSubscriber implements Flow.Subscriber<TableRowEventBatch<Trip>> {
 
-		private final CarFinder carFinder = new CarFinder();
-
 		@Override
 		public void onSubscribe(Subscription subscription) {
 			subscription.request(Long.MAX_VALUE);
@@ -462,17 +416,16 @@ public class App implements Runnable {
 
 				Trip trip = item.entry();
 
-				// System.out.printf("%s - %s\n", trip.getTrip_id(),
-				// entry.getEventType().name());
+				System.out.printf("%s - %s\n", trip.getTrip_id(), item.type());
 
 				Statement query = ignite.sql().createStatement("SELECT REGISTRATION FROM CAR WHERE TRIPID = ?");
 				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query, trip.getTrip_id());
 				if (resultSet.hasNext()) {
 					String reg = resultSet.next().stringValue(0);
-					Car car = carKVView.get(null, reg);
+					Car car = carRView.get(null, Car.forId(reg));
 
 					trip.setRegistration(reg);
-					tripKVView.put(null, trip.getTrip_id(), trip);
+					tripRView.insert(null, trip);
 
 					car.setTripId(null);
 					car.setLocationId(trip.getDOLocationID());
@@ -487,12 +440,12 @@ public class App implements Runnable {
 					 * car.setDropOffLocationId(trip.getDOLocationID());
 					 * car.setDropOffTime(trip.getDropoff_datetime()); } }
 					 */
-					tripPickUpKVView.remove(null, trip.getTrip_id());
-					carKVView.put(null, reg, car);
+					tripPickUpRView.delete(null, TripPickUp.forId(trip.getTrip_id()));
+					carRView.insert(null, car);
 				} else {
 					System.err.println("Didn't find car - " + trip.getTrip_id());
 				}
-				tripPickUpKVView.remove(null, trip.getTrip_id());
+				tripPickUpRView.delete(null, TripPickUp.forId(trip.getTrip_id()));
 			}
 		}
 		

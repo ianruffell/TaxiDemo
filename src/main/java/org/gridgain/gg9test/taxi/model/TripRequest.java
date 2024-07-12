@@ -1,12 +1,17 @@
 package org.gridgain.gg9test.taxi.model;
 
 import org.apache.ignite.catalog.annotations.Column;
+import org.apache.ignite.catalog.annotations.ColumnRef;
 import org.apache.ignite.catalog.annotations.Id;
+import org.apache.ignite.catalog.annotations.Index;
 import org.apache.ignite.catalog.annotations.Table;
 import org.apache.ignite.catalog.annotations.Zone;
 
 @Table(value = TripRequest.TABLE_NAME,
-zone = @Zone(value = "zone_test", storageProfiles = "default")
+zone = @Zone(value = "zone_test", storageProfiles = "default"),
+indexes = {
+		@Index(value = "tripId", columns = { @ColumnRef(value = "tripId") })
+}
 )
 public class TripRequest {
 	
@@ -26,8 +31,11 @@ public class TripRequest {
 	@Column
 	private Integer dropoffLocationId;
 	
-	public TripRequest() {
-		
+	public static TripRequest forId(String tripId) {
+		return new TripRequest(tripId, null, null, null, null, null);
+	}
+	
+	public TripRequest() {	
 	}
 
 	public TripRequest(String tripId, Long requestDatetime, Long pickupDatetime, Long dropoffDatetime,

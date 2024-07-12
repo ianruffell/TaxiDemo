@@ -42,7 +42,7 @@ public class CarFinder {
 		} else {
 			// System.out.println("Found " + all.size() + " available cars");
 			String reg = (String) resultSet.next().stringValue(0);
-			car = app.getCarKVView().get(null, reg);
+			car = app.getCarRView().get(null, Car.forId(reg));
 			car.setTripId(tripRequest.getTripId());
 			car.setDropOffTime(tripRequest.getDropoffDatetime());
 		}
@@ -61,7 +61,7 @@ public class CarFinder {
 		} else {
 			// System.out.println("Found " + all.size() + " available cars");
 			String reg = (String) resultSet.next().stringValue(0);
-			car = app.getCarKVView().get(null, reg);
+			car = app.getCarRView().get(null, Car.forId(reg));
 			car.setQueuedTripId(tripRequest.getTripId());
 		}
 

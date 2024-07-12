@@ -39,8 +39,13 @@ public class Car {
 	@Column
 	private String queuedTripId;
 	
+	public static Car forId(String reg) {
+		Car car = new Car();
+		car.setRegistration(reg);
+		return car;
+	}
+	
 	public Car() {
-		
 	}
 
 	public Car(String registration, String driver, Integer locationId, Integer dropOffLocationId, Long lastUpdate,

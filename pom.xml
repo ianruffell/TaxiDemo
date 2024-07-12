@@ -11,8 +11,7 @@
         <repositories>
                 <repository>
                         <id>GridGain External Repository</id>
-                        <url>
-                                https://www.gridgainsystems.com/nexus/content/repositories/external</url>
+                        <url>https://maven.gridgain.com/nexus/content/repositories/external</url>
                 </repository>
 	</repositories>
 

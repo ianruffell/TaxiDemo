@@ -29,6 +29,10 @@ public class TripQueue {
 	private Integer dropOffLocationId;
 	@Column
 	private Long pickUpTime;
+	
+	public static TripQueue forId(String tripId) {
+		return new TripQueue(tripId, null, null, null, null);
+	}
 
 	public TripQueue() {
 		

@@ -25,8 +25,11 @@ public class TripPickUp {
 	@Column
 	private Integer PULocationID;
 	
-	public TripPickUp() {
-		
+	public static TripPickUp forId(String tripId) {
+		return new TripPickUp(tripId, null, null);
+	}
+	
+	public TripPickUp() {	
 	}
 
 	public TripPickUp(String tripId, Long pickupTime, Integer pULocationID) {
