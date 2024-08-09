@@ -12,8 +12,7 @@ value = Car.TABLE_NAME,
 zone = @Zone(value = "zone_test", storageProfiles = "default"),
 indexes = {
 		@Index(value = "locationId", columns = { @ColumnRef(value = "locationId") }),
-		@Index(value = "tripId", columns = { @ColumnRef(value = "tripId") }),
-		@Index(value = "queuedTripId", columns = { @ColumnRef(value = "queuedTripId") })
+		@Index(value = "tripId", columns = { @ColumnRef(value = "tripId") })
 		})
 public class Car {
 	
@@ -36,8 +35,6 @@ public class Car {
 	private Long dropOffTime;
 	@Column
 	private String tripId;
-	@Column
-	private String queuedTripId;
 	
 	public static Car forId(String reg) {
 		Car car = new Car();
@@ -49,7 +46,7 @@ public class Car {
 	}
 
 	public Car(String registration, String driver, Integer locationId, Integer dropOffLocationId, Long lastUpdate,
-			Long startTime, Long dropOffTime, String tripId, String queuedTripId) {
+			Long startTime, Long dropOffTime, String tripId) {
 		this.registration = registration;
 		this.driver = driver;
 		this.locationId = locationId;
@@ -58,7 +55,6 @@ public class Car {
 		this.startTime = startTime;
 		this.dropOffTime = dropOffTime;
 		this.tripId = tripId;
-		this.queuedTripId = queuedTripId;
 	}
 
 	public String getRegistration() {
@@ -125,19 +121,11 @@ public class Car {
 		this.dropOffLocationId = dropOffLocationId;
 	}
 
-	public String getQueuedTripId() {
-		return queuedTripId;
-	}
-
-	public void setQueuedTripId(String queuedTripId) {
-		this.queuedTripId = queuedTripId;
-	}
-
 	@Override
 	public String toString() {
 		return "Car [registration=" + registration + ", driver=" + driver + ", locationId=" + locationId
 				+ ", dropOffLocationId=" + dropOffLocationId + ", lastUpdate=" + lastUpdate + ", startTime=" + startTime
-				+ ", dropOffTime=" + dropOffTime + ", tripId=" + tripId + ", queuedTripId=" + queuedTripId + "]";
+				+ ", dropOffTime=" + dropOffTime + ", tripId=" + tripId + "]";
 	}
 
 }

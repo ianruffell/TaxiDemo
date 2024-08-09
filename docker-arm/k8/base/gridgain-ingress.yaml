@@ -1,0 +1,11 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gridgain-ingress
+  namespace: gridgain
+spec:
+  defaultBackend:
+    service:
+      name: gridgain-service
+      port:
+        number: 10800

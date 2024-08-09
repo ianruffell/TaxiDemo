@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: gridgain
+configMapGenerator:
+- name: etc
+  files:
+  - gridgain-config.conf
+  - gridgain-license.conf
+  - cluster-init.sh
+  - gridgain.java.util.logging.properties
+resources:
+  - base/namespace.yaml
+  - base/cluster-role.yaml
+  - base/gridgain-cluster.yaml
+  - base/gridgain-ingress.yaml
+  - base/gridgain-service.yaml
+  - base/service-account.yaml

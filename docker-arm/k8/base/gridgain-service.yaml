@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gridgain-service
+  namespace: gridgain
+  labels:
+    app: gridgain
+spec:
+  selector:
+    app: gridgain
+  ports:
+    - name: thinclients
+      port: 10800
+      targetPort: 10800
+    - name: rest
+      port: 10300
+      targetPort: 10300
+    - name: nodefinder
+      port: 3344
+      targetPort: 3344
+  clusterIP: None

@@ -1,0 +1,57 @@
+# An example of a Kubernetes configuration for pod deployment.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  # Cluster name.
+  name: gridgain-cluster
+  namespace: gridgain
+spec:
+  # The initial number of Ignite pods.
+  replicas: 3
+  serviceName: gridgain-service
+  selector:
+    matchLabels:
+      app: gridgain
+  template:
+    metadata:
+      labels:
+        app: gridgain
+    spec:
+      serviceAccountName: gridgain
+      containers:
+        - name: gridgain-node
+          image: gridgain/gridgain9:9.0.2
+          ports:
+            # Ports to open.
+            - containerPort: 10300 
+            - containerPort: 10800
+            - containerPort: 3344
+          volumeMounts:
+            - name: work
+              mountPath: /gg9/work
+            - name: etc
+              mountPath: /gg9/etc
+          #readinessProbe:
+            #httpGet:
+              #path: /management/v1/cluster/topology/physical
+              #port: 10300
+            #initialDelaySeconds: 3
+            #periodSeconds: 10
+            #timeoutSeconds: 1
+            #successThreshold: 1
+            #failureThreshold: 10
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - /gg9/etc/cluster-init.sh
+            initialDelaySeconds: 3
+            timeoutSeconds: 5
+      volumes:
+        - name: etc
+          configMap:
+            name: etc
+        - name: work
+          hostPath:
+            path: /tmp/gg9work
+            type: DirectoryOrCreate

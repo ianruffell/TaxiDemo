@@ -70,6 +70,12 @@ public class Trip {
 	private String wav_request_flag;
 	@Column
 	private String wav_match_flag;
+	
+	public static Trip forId(String id) {
+		Trip trip = new Trip();
+		trip.setTrip_id(id);
+		return trip;
+	}
 
 	private Trip() {
 	}

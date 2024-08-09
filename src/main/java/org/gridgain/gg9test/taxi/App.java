@@ -23,12 +23,13 @@ import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.TableRowEvent;
 import org.apache.ignite.table.TableRowEventBatch;
+import org.apache.ignite.table.TableRowEventType;
 import org.apache.ignite.table.mapper.Mapper;
+import org.apache.ignite.tx.Transaction;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.gridgain.gg9test.taxi.model.Car;
 import org.gridgain.gg9test.taxi.model.Trip;
 import org.gridgain.gg9test.taxi.model.TripPickUp;
-import org.gridgain.gg9test.taxi.model.TripQueue;
 import org.gridgain.gg9test.taxi.model.TripRequest;
 
 public class App implements Runnable {
@@ -52,7 +53,6 @@ public class App implements Runnable {
 	private RecordView<Car> carRView;
 	private RecordView<Trip> tripRView;
 	private RecordView<TripPickUp> tripPickUpRView;
-	private RecordView<TripQueue> tripQueueRView;
 	private RecordView<TripRequest> tripRequestRView;
 	private IgniteClient ignite;
 
@@ -62,9 +62,9 @@ public class App implements Runnable {
 
 	public App() throws Exception {
 		long start = System.currentTimeMillis();
-		ignite = IgniteClient.builder().addresses("127.0.0.1:10800").build();
+		ignite = IgniteClient.builder().addresses("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802").build();
 		System.out.printf("Client connected in %dms\n", System.currentTimeMillis() - start);
-		
+
 		// Drop Tables
 		System.out.printf("Dropping tables - %s", Car.TABLE_NAME);
 		Statement query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + Car.TABLE_NAME);
@@ -78,11 +78,9 @@ public class App implements Runnable {
 		query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + TripPickUp.TABLE_NAME);
 		System.out.printf(", %s", TripPickUp.TABLE_NAME);
 		ignite.sql().execute(null, query);
-		query = ignite.sql().createStatement("DROP TABLE IF EXISTS " + TripQueue.TABLE_NAME);
-		System.out.printf(", %s\n", TripQueue.TABLE_NAME);
-		ignite.sql().execute(null, query);
-		
-		
+
+		// ignite.catalog().dropTable(TRIP_DATA_FILE);
+
 		System.out.printf("Creating tables - %s", Car.TABLE_NAME);
 		ignite.catalog().createTable(Car.class);
 		carTable = ignite.tables().table(Car.TABLE_NAME);
@@ -97,11 +95,6 @@ public class App implements Runnable {
 		ignite.catalog().createTable(TripPickUp.class);
 		tripPickUpTable = ignite.tables().table(TripPickUp.TABLE_NAME);
 		tripPickUpRView = tripPickUpTable.recordView(Mapper.of(TripPickUp.class));
-
-		System.out.printf(", %s", TripQueue.TABLE_NAME);
-		ignite.catalog().createTable(TripQueue.class);
-		tripQueueTable = ignite.tables().table(TripQueue.TABLE_NAME);
-		tripQueueRView = tripQueueTable.recordView(Mapper.of(TripQueue.class));
 
 		System.out.printf(", %s", TripRequest.TABLE_NAME);
 		ignite.catalog().createTable(TripRequest.class);
@@ -172,6 +165,7 @@ public class App implements Runnable {
 				TripRequest tr = trip.toTripRequest();
 				// System.out.println("Request : " + tr);
 				tripRequestRView.insert(null, tr);
+				tripRView.insert(null, trip);
 			}
 			request.remove(currentTime);
 
@@ -268,14 +262,6 @@ public class App implements Runnable {
 		this.tripPickUpRView = tripPickUpRView;
 	}
 
-	public RecordView<TripQueue> getTripQueueRView() {
-		return tripQueueRView;
-	}
-
-	public void setTripQueueRView(RecordView<TripQueue> tripQueueRView) {
-		this.tripQueueRView = tripQueueRView;
-	}
-
 	public RecordView<TripRequest> getTripRequestRView() {
 		return tripRequestRView;
 	}
@@ -286,10 +272,6 @@ public class App implements Runnable {
 
 	public IgniteClient getIgnite() {
 		return ignite;
-	}
-
-	public void setIgnite(IgniteClient ignite) {
-		this.ignite = ignite;
 	}
 
 	private class TripRequestSubscriber implements Flow.Subscriber<TableRowEventBatch<TripRequest>> {
@@ -305,33 +287,25 @@ public class App implements Runnable {
 		public void onNext(TableRowEventBatch<TripRequest> batch) {
 			List<TableRowEvent<TripRequest>> items = batch.rows();
 			for (TableRowEvent<TripRequest> item : items) {
-				System.out.println("onNext: " + item.type() + ", old=" + item.oldEntry() + ", new=" + item.entry());
+				// System.out.println("TripRequest: " + item.type() + ", old=" + item.oldEntry()
+				// + ", new=" + item.entry());
 				TripRequest tr = item.entry();
+				String tripId = tr.getTripId();
 
 				Car car = carFinder.findCarForTrip(App.this, tr);
-				if (car != null) {
-					car.setTripId(tr.getTripId());
-					car.setQueuedTripId(null);
-				} else {
-					car = carFinder.findCarForQueue(App.this, tr);
-					if (car != null) {
-						car.setQueuedTripId(tr.getTripId());
-						TripQueue tripQueue = new TripQueue(car.getRegistration(), tr.getPickupLocationId(),
-								tr.getDropoffLocationId(), tr.getPickupDatetime(), tr.getTripId());
-						tripQueueRView.insert(null, tripQueue);
-						tripRequestRView.delete(null, tr);
-						// System.out.println("Add to Queue " + tripQueue.getTripId());
-					} else {
-						System.err.println("No car for queue!");
-					}
-				}
+				car.setTripId(tripId);
 				carRView.insert(null, car);
+
+				Trip trip = tripRView.get(null, Trip.forId(tripId));
+				trip.setRegistration(car.getRegistration());
+				tripRView.replace(null, trip);
 			}
 		}
 
 		@Override
 		public void onError(Throwable throwable) {
 			System.out.println("onError: " + throwable);
+			throwable.printStackTrace();
 		}
 
 		@Override
@@ -352,20 +326,19 @@ public class App implements Runnable {
 		public void onNext(TableRowEventBatch<TripPickUp> batch) {
 			List<TableRowEvent<TripPickUp>> items = batch.rows();
 			for (TableRowEvent<TripPickUp> item : items) {
-				System.out.println("onNext: " + item.type() + ", old=" + item.oldEntry() + ", new=" + item.entry());
-				
+				// System.out.println("TripPickup: " + item.type() + ", old=" + item.oldEntry()
+				// + ", new=" + item.entry());
+
 				TripPickUp tpu = item.entry();
 				String tripId = tpu.getTripId();
 				TripRequest tr = new TripRequest();
 				tr.setTripId(tripId);
 				TripRequest tripRequest = tripRequestRView.get(null, tr);
-				
-				TripQueue tq = new TripQueue();
-				tq.setTripId(tripId);
-				TripQueue tripQueue = tripQueueRView.get(null, tq);
 
-				Statement query = ignite.sql().createStatement("update car set locationId = ?, lastUpdate = ?, queuedTripId = null, tripId = ? where tripId = ? or queuedTripId = ?");
-				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query, tpu.getPULocationID(), tpu.getPickupTime(), tripId, tripId, tripId);
+				Statement query = ignite.sql()
+						.createStatement("update car set locationId = ?, lastUpdate = ? where tripId = ?");
+				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query, tpu.getPULocationID(),
+						tpu.getPickupTime(), tripId);
 				long updated = resultSet.affectedRows();
 
 				query = ignite.sql().createStatement("SELECT REGISTRATION FROM CAR WHERE tripId = ?");
@@ -374,17 +347,13 @@ public class App implements Runnable {
 				String reg = "";
 				if (resultSet.hasNext()) {
 					reg = resultSet.next().stringValue(0);
-					System.out.printf("Pickup [%s] [%s] %s %s %d\n", reg, tripId,
-					Boolean.valueOf(tripRequest != null).toString(),
-					Boolean.valueOf(tripQueue != null).toString(), updated);
+					System.out.printf("Pickup [%s] [%s] %s %d\n", reg, tripId,
+							Boolean.valueOf(tripRequest != null).toString(), updated);
 				} else {
-					System.err.printf("Pickup [%s] [%s] %s %s %d\n", reg, tripId,
-							Boolean.valueOf(tripRequest != null).toString(), Boolean.valueOf(tripQueue != null).toString(),
-							updated);
+					System.err.printf("Pickup [%s] [%s] %s %d\n", reg, tripId,
+							Boolean.valueOf(tripRequest != null).toString(), updated);
 				}
-
-				tripRequestRView.delete(null, TripRequest.forId(tripId));
-				tripQueueRView.delete(null, TripQueue.forId(tripId));
+				tripRequestRView.delete(null, tr);
 			}
 
 		}
@@ -392,6 +361,7 @@ public class App implements Runnable {
 		@Override
 		public void onError(Throwable throwable) {
 			System.out.println("onError: " + throwable);
+			throwable.printStackTrace();
 		}
 
 		@Override
@@ -412,46 +382,40 @@ public class App implements Runnable {
 		public void onNext(TableRowEventBatch<Trip> batch) {
 			List<TableRowEvent<Trip>> items = batch.rows();
 			for (TableRowEvent<Trip> item : items) {
-				System.out.println("onNext: " + item.type() + ", old=" + item.oldEntry() + ", new=" + item.entry());
+				// System.out.println("TripComplete: " + item.type() + ", old=" +
+				// item.oldEntry() + ", new=" + item.entry());
 
 				Trip trip = item.entry();
 
-				System.out.printf("%s - %s\n", trip.getTrip_id(), item.type());
+				if (item.type() == TableRowEventType.CREATED) {
+					//System.out.printf("%s - %s\n", trip.getTrip_id(), item.type());
+					Transaction tx = ignite.transactions().begin();
 
-				Statement query = ignite.sql().createStatement("SELECT REGISTRATION FROM CAR WHERE TRIPID = ?");
-				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query, trip.getTrip_id());
-				if (resultSet.hasNext()) {
-					String reg = resultSet.next().stringValue(0);
-					Car car = carRView.get(null, Car.forId(reg));
+					Statement query = ignite.sql().createStatement("SELECT REGISTRATION FROM CAR WHERE TRIPID = ?");
+					ResultSet<SqlRow> resultSet = ignite.sql().execute(tx, query, trip.getTrip_id());
+					if (resultSet.hasNext()) {
+						String reg = resultSet.next().stringValue(0);
+						Car car = carRView.get(tx, Car.forId(reg));
 
-					trip.setRegistration(reg);
-					tripRView.insert(null, trip);
+						car.setTripId(null);
+						car.setLocationId(trip.getDOLocationID());
+						car.setLastUpdate(trip.getDropoff_datetime());
 
-					car.setTripId(null);
-					car.setLocationId(trip.getDOLocationID());
-					car.setLastUpdate(trip.getDropoff_datetime());
-
-					/*
-					 * String qTtripId = car.getQueuedTripId(); if (qTtripId != null) { TripQueue
-					 * qTtrip = ignite.getTripQueueCache().get(qTtripId); if (qTtrip == null) {
-					 * System.err.println("No TripQueue! - " + qTtripId); } else {
-					 * car.setTripId(qTtripId); car.setLocationId(qTtrip.getPickUpLocationId());
-					 * car.setLastUpdate(qTtrip.getPickUpTime()); car.setQueuedTripId(null);
-					 * car.setDropOffLocationId(trip.getDOLocationID());
-					 * car.setDropOffTime(trip.getDropoff_datetime()); } }
-					 */
-					tripPickUpRView.delete(null, TripPickUp.forId(trip.getTrip_id()));
-					carRView.insert(null, car);
-				} else {
-					System.err.println("Didn't find car - " + trip.getTrip_id());
+						trip.setRegistration(reg);
+						tripRView.replace(tx, Trip.forId(reg));
+						System.out.printf("Delete PickUp %s\n", trip.getTrip_id());
+						tripPickUpRView.delete(tx, TripPickUp.forId(trip.getTrip_id()));
+						carRView.replace(tx, car);
+					}
+					tx.commit();
 				}
-				tripPickUpRView.delete(null, TripPickUp.forId(trip.getTrip_id()));
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable throwable) {
 			System.out.println("onError: " + throwable);
+			throwable.printStackTrace();
 		}
 
 		@Override
@@ -473,7 +437,6 @@ public class App implements Runnable {
 			try {
 				long tripRequestSize = size(TripRequest.TABLE_NAME);
 				long tripPickUpSize = size(TripPickUp.TABLE_NAME);
-				long tripQueueSize = size(TripQueue.TABLE_NAME);
 				long carSize = size(Car.TABLE_NAME);
 				long tripSize = size(Trip.TABLE_NAME);
 				System.out.println(currentTime.toString());
@@ -482,12 +445,12 @@ public class App implements Runnable {
 				ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query);
 				Long free = resultSet.next().longValue(0);
 
-				System.out.println("+--------+--------+--------+--------+--------+--------+--------+--------+");
-				System.out.println("|Request |PickUp  |Queue   |Total   |Complete|Cars    |Free Car|Times   |");
-				System.out.println("+--------+--------+--------+--------+--------+--------+--------+--------+");
-				System.out.printf("|%8d|%8d|%8d|%8d|%8d|%8d|%8d|%8d|\n", tripRequestSize, tripPickUpSize, tripQueueSize,
-						(tripRequestSize + tripPickUpSize + tripQueueSize), tripSize, carSize, free, times.size());
-				System.out.println("+--------+--------+--------+--------+--------+--------+--------+--------+");
+				System.out.println("+--------+--------+--------+--------+--------+--------+--------+");
+				System.out.println("|Request |PickUp  |Total   |Complete|Cars    |Free Car|Times   |");
+				System.out.println("+--------+--------+--------+--------+--------+--------+--------+");
+				System.out.printf("|%8d|%8d|%8d|%8d|%8d|%8d|%8d|\n", tripRequestSize, tripPickUpSize,
+						(tripRequestSize + tripPickUpSize), tripSize, carSize, free, times.size());
+				System.out.println("+--------+--------+--------+--------+--------+--------+--------+");
 			} catch (Exception e) {
 				System.err.println(e.getMessage());
 				e.printStackTrace();
@@ -495,7 +458,7 @@ public class App implements Runnable {
 		}
 
 	}
-	
+
 	public long size(String table) {
 		Statement query = ignite.sql().createStatement("select count(*) from " + table);
 		ResultSet<SqlRow> resultSet = ignite.sql().execute(null, query);
