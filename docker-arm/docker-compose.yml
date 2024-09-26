@@ -19,7 +19,7 @@ name: gridgain9
 
 x-gridgain-def:
   &gridgain-def
-  image: gridgain/gridgain9:9.0.2
+  image: gridgain/gridgain9:9.0.6
   volumes:
     - ./etc/gridgain-config-dc.conf:/gg9/etc/gridgain-config.conf
     - ./etc/gridgain-license.conf:/gg9/etc/gridgain-license.conf

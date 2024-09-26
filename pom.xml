@@ -16,11 +16,11 @@
 	</repositories>
 
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<gridgain.version>9.0.2</gridgain.version>
+		<gridgain.version>9.0.6</gridgain.version>
 	</properties>
 
 	<dependencies>
