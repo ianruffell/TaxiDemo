@@ -1,4 +1,4 @@
-package org.gridgain.demo.model;
+package com.gridgain.demo.model;
 
 import java.time.Instant;
 

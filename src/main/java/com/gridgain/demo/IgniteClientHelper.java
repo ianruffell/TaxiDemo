@@ -1,33 +1,31 @@
-package org.gridgain.demo;
+package com.gridgain.demo;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.gridgain.demo.model.Car;
-import org.gridgain.demo.model.Trip;
-import org.gridgain.demo.model.TripOnScene;
-import org.gridgain.demo.model.TripPickUp;
-import org.gridgain.demo.model.TripQueue;
-import org.gridgain.demo.model.TripRequest;
-import org.gridgain.demo.model.Zone;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgnitePredicate;
+
+import com.gridgain.demo.model.Car;
+import com.gridgain.demo.model.Trip;
+import com.gridgain.demo.model.TripPickUp;
+import com.gridgain.demo.model.TripQueue;
+import com.gridgain.demo.model.TripRequest;
+import com.gridgain.demo.model.Zone;
 
 public class IgniteClientHelper implements AutoCloseable {
 
@@ -37,7 +35,6 @@ public class IgniteClientHelper implements AutoCloseable {
 	public static final String ZONE_CACHE_NAME = "Zone";
 	public static final String CAR_CACHE_NAME = "Car";
 	public static final String TRIP_REQUEST_CACHE_NAME = "TripRequest";
-	public static final String TRIP_ON_SCENE_CACHE_NAME = "TripOnScene";
 	public static final String TRIP_PICKUP_CACHE_NAME = "TripPickUp";
 	public static final String TRIP_QUEUE_CACHE_NAME = "TripQueue";
 	public static final String TRIP_CACHE_NAME = "Trip";
@@ -46,44 +43,20 @@ public class IgniteClientHelper implements AutoCloseable {
 	private final IgniteCache<Integer, Zone> zoneCache;
 	private final IgniteCache<String, Car> carCache;
 	private final IgniteCache<String, TripRequest> tripRequestCache;
-	private final IgniteCache<String, TripOnScene> tripOnSceneCache;
 	private final IgniteCache<String, TripPickUp> tripPickUpCache;
 	private final IgniteCache<String, TripQueue> tripQueueCache;
 	private final IgniteCache<String, Trip> tripCache;
 
-	public static void main(String args[]) throws Exception {
-		try (IgniteClientHelper ich = new IgniteClientHelper()) {
-			System.out.println("IgniteClientHelper");
-		}
-	}
-
-	public IgniteClientHelper() throws Exception {
-		this(true);
+	public static IgniteClientHelper start() throws Exception {
+		return new IgniteClientHelper(true);
 	}
 
 	public IgniteClientHelper(boolean destroyCaches) throws Exception {
+		System.setProperty("IGNITE_QUIET", "true");
 		System.setProperty("java.net.preferIPv4Stack", "true");
 
-		IgniteConfiguration cfg = new IgniteConfiguration();
+		IgniteConfiguration cfg = new AppConfiguration();
 		cfg.setClientMode(true);
-		cfg.setPeerClassLoadingEnabled(true);
-		cfg.setDeploymentMode(CONTINUOUS);
-
-		TcpDiscoverySpi tcpDiscoverySpi = new org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi();
-		TcpDiscoveryVmIpFinder tcpDiscoveryVmIpFinder = new org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder();
-		ArrayList<String> list = new ArrayList<String>();
-		list.add("127.0.0.1:47500..47510");
-
-		tcpDiscoveryVmIpFinder.setAddresses(list);
-		tcpDiscoverySpi.setIpFinder(tcpDiscoveryVmIpFinder);
-
-		cfg.setDiscoverySpi(tcpDiscoverySpi);
-
-		BinaryConfiguration binaryConfiguration = new BinaryConfiguration();
-		BinaryBasicNameMapper nameMapper = new BinaryBasicNameMapper();
-		nameMapper.setSimpleName(true);
-		binaryConfiguration.setNameMapper(nameMapper);
-		cfg.setBinaryConfiguration(binaryConfiguration);
 
 		ignite = Ignition.start(cfg);
 		ignite.cluster().state(ACTIVE);
@@ -95,7 +68,6 @@ public class IgniteClientHelper implements AutoCloseable {
 			ignite.destroyCache(ZONE_CACHE_NAME);
 			ignite.destroyCache(CAR_CACHE_NAME);
 			ignite.destroyCache(TRIP_REQUEST_CACHE_NAME);
-			ignite.destroyCache(TRIP_ON_SCENE_CACHE_NAME);
 			ignite.destroyCache(TRIP_PICKUP_CACHE_NAME);
 			ignite.destroyCache(TRIP_QUEUE_CACHE_NAME);
 			ignite.destroyCache(TRIP_CACHE_NAME);
@@ -105,7 +77,6 @@ public class IgniteClientHelper implements AutoCloseable {
 		zoneCache = ignite.getOrCreateCache(new ZoneCacheConfiguration<Integer, Zone>());
 		carCache = ignite.getOrCreateCache(new CarCacheConfiguration<String, Car>());
 		tripRequestCache = ignite.getOrCreateCache(new TripRequestCacheConfiguration<String, TripRequest>());
-		tripOnSceneCache = ignite.getOrCreateCache(new TripOnSceneCacheConfiguration<String, TripOnScene>());
 		tripPickUpCache = ignite.getOrCreateCache(new TripPickUpCacheConfiguration<String, TripPickUp>());
 		tripQueueCache = ignite.getOrCreateCache(new TripQueueCacheConfiguration<String, TripQueue>());
 		tripCache = ignite.getOrCreateCache(new TripCacheConfiguration<String, Trip>());
@@ -152,10 +123,6 @@ public class IgniteClientHelper implements AutoCloseable {
 
 	public IgniteCache<String, TripRequest> getTripRequestCache() {
 		return tripRequestCache;
-	}
-
-	public IgniteCache<String, TripOnScene> getTripOnSceneCache() {
-		return tripOnSceneCache;
 	}
 
 	public IgniteCache<String, TripPickUp> getTripPickUpCache() {
@@ -211,21 +178,7 @@ public class IgniteClientHelper implements AutoCloseable {
 			setStatisticsEnabled(true);
 		}
 	}
-	public static class TripOnSceneCacheConfiguration<K, V> extends CacheConfiguration<String, TripOnScene> {
 
-		private static final long serialVersionUID = 0L;
-
-		public TripOnSceneCacheConfiguration() {
-			// Set required cache configuration properties.
-			setName(TRIP_ON_SCENE_CACHE_NAME);
-			setIndexedTypes(String.class, TripOnScene.class);
-			setBackups(1);
-			setCacheMode(PARTITIONED);
-			setDataRegionName(DATA_REGION);
-			setSqlSchema(SQL_SCHEMA);
-			setStatisticsEnabled(true);
-		}
-	}
 	public static class TripPickUpCacheConfiguration<K, V> extends CacheConfiguration<String, TripPickUp> {
 
 		private static final long serialVersionUID = 0L;

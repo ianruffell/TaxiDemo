@@ -8,7 +8,7 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
 	<bean class="org.apache.ignite.configuration.IgniteConfiguration">
-		<property name="igniteInstanceName" value="employee" />
+		<property name="igniteInstanceName" value="TaxiDemo" />
 		<!-- Enable peer class loading. -->
 		<property name="peerClassLoadingEnabled" value="true" />
 		<!-- Set deployment mode. -->
@@ -41,12 +41,6 @@
 		<property name="deploymentSpi">
 			<bean
 				class="org.gridgain.control.agent.processor.deployment.ManagedDeploymentSpi" />
-		</property>
-
-		<!-- Enable tracing. -->
-		<property name="tracingSpi">
-			<bean
-				class="org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi" />
 		</property>
 
 		<property name="dataStorageConfiguration">
@@ -82,16 +76,6 @@
 			</bean>
 		</property>
 
-		<property name="binaryConfiguration">
-			<bean
-				class="org.apache.ignite.configuration.BinaryConfiguration">
-				<property name="nameMapper">
-					<bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
-						<property name="simpleName" value="true" />
-					</bean>
-				</property>
-			</bean>
-		</property>
 
 	</bean>
 </beans>

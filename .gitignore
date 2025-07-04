@@ -6,6 +6,10 @@ work/
 .project
 .classpath
 .pydevproject
+**/.DS_Store
+src/main/python/__pycache__/
 src/main/resources/train.csv
 src/main/resources/fhvhv_tripdata_2023-07.parquet
 src/main/resources/yellow_tripdata_2023-07.parquet
+gridgain-license.xml
+dependency-reduced-pom.xml
